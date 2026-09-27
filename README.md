@@ -5,6 +5,10 @@
 
 A native PC port of **Ace Combat 6: Fires of Liberation** built on top of the [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk). The Xbox 360 PowerPC game code is statically recompiled to x86-64, while visible rendering currently remains authoritative in the vendored RexGlue/Xenia graphics backend.
 
+> [!NOTE]
+> **This `linux` branch builds and runs natively on Linux** (Vulkan). See [Building on Linux](#building-on-linux).
+> The Linux port itself is BMagnu's work from [sal063/AC6_recomp#45](https://github.com/sal063/AC6_recomp/pull/45); this branch adds fixes on top: controller input freezing in gameplay, a `/dev/shm` leak that caused "Bus error" crashes, a CPU busy-wait while waiting for the GPU (helps laptop iGPUs), and a link error on some toolchains. It also carries two fixes for black screens when running the Windows build under Wine.
+
 ---
 
 ## Disclaimer
@@ -44,7 +48,7 @@ See [Important console variables](#important-console-variables).
 
 | | |
 |---|---|
-| **OS** | Windows 10 or 11, 64-bit |
+| **OS** | Windows 10 or 11, 64-bit, or Linux (x86-64, see [Building on Linux](#building-on-linux)) |
 | **CPU** | **Must support AVX2** — Intel 4th-gen Core (2013) or newer, AMD Zen (2017) or newer. |
 | **GPU** | Direct3D 12 capable |
 | **Game data** | Your own legally obtained copy of Ace Combat 6 (US region only! Europe and Japan is not supported) |
@@ -181,6 +185,74 @@ cmake --build --preset win-amd64-relwithdebinfo
 The executable is placed at `out/build/win-amd64-relwithdebinfo/ac6recomp.exe`.
 
 On Windows, use the preset commands above rather than plain `cmake -L` in the repo root. If you previously configured from an `x86` Visual Studio prompt or with the wrong compiler on `PATH`, delete `out/build/win-amd64-relwithdebinfo` and re-run the preset from a normal 64-bit PowerShell/CMD window or an x64 Native Tools prompt.
+
+### Building on Linux
+
+The Linux build uses the Vulkan backend. Tested on Debian with an AMD Radeon 660M (Mesa RADV).
+
+**Not available on Linux yet:** keyboard and mouse controls (use a controller), texture replacement mods, and networking.
+
+**1. Install the dependencies** (Debian/Ubuntu package names):
+
+```bash
+sudo apt install clang cmake ninja-build pkg-config git python3 \
+  libgtk-3-dev libx11-xcb-dev \
+  libpulse-dev libpipewire-0.3-dev libasound2-dev \
+  libudev-dev libdbus-1-dev \
+  mesa-vulkan-drivers libvulkan1
+```
+
+- **clang 19 or newer** is required (`clang --version`). Older versions fail on C++23 features the SDK uses. If your default `clang` is older, install `clang-19` and add `-DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19` to the `cmake --preset` commands below.
+- The audio (`libpulse`, `libpipewire`, `libasound2`) and `libudev` packages matter: the bundled SDL only enables sound and controller hotplug for the ones it finds at build time. Without them the build succeeds but you get no sound or no controller.
+
+**2. Get the code and the game executable:**
+
+```bash
+git clone -b linux https://github.com/termuxuser123/AC6_recomp.git
+cd AC6_recomp
+```
+
+The build needs the game's `default.xex` extracted to `assets/default.xex` - it cannot read it from inside the `.iso`. Extract the disc with [xdvdfs](https://github.com/antangelo/xdvdfs/releases):
+
+```bash
+./xdvdfs unpack "/path/to/Ace Combat 6.iso" assets
+ls assets/default.xex
+```
+
+**3. Build.** The first configure only sets up the SDK and the recompiler, codegen then writes the recompiled game code into `generated/`, and the second configure picks it up:
+
+```bash
+cmake --preset linux-amd64-relwithdebinfo
+cmake --build --preset linux-amd64-relwithdebinfo --target ac6recomp_codegen
+cmake --preset linux-amd64-relwithdebinfo
+cmake --build --preset linux-amd64-relwithdebinfo
+```
+
+Codegen prints many `Unable to decode instruction` warnings - those are data tables inside the game's code section and are expected. After a normal code update (`git pull`) only the last command is needed; re-run all four only when the codegen config changes.
+
+**4. Run.** The game looks for its files next to the executable:
+
+```bash
+cd out/build/linux-amd64-relwithdebinfo
+ln -s ../../../assets assets
+./ac6recomp
+```
+
+If it exits immediately with code 1, it did not find `assets/default.xex` (or a `.iso`) next to the executable.
+
+**Performance tips for weaker GPUs / laptop iGPUs:**
+
+```bash
+./ac6recomp --no-ac6_unlock_fps --no-ac6_terrain_hd --render_target_path_vulkan=fbo --no-vsync
+```
+
+- `--no-ac6_unlock_fps` locks to the original 30 FPS. If the GPU cannot sustain 60, this gives much steadier frame pacing than an unlocked 30-45.
+- `--no-ac6_terrain_hd` draws terrain at console detail instead of 2x.
+- `--render_target_path_vulkan=fbo` uses the faster render target path.
+- `--no-vsync` avoids frames just over the refresh interval being held an extra refresh.
+- On laptops, plug in and use the performance power profile (`powerprofilesctl set performance`).
+
+Press `F3` to see host (displayed) and guest (game) FPS. To make settings permanent, set them in `ac6recomp.toml` next to the executable (for example `ac6_unlock_fps = false`) instead of passing flags.
 
 ---
 
