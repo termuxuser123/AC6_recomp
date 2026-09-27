@@ -44,6 +44,7 @@ set(AC6RECOMP_SOURCES
     src/ac6_backend_fixes/ac6_effect_mode_fix.cpp
     src/ac6_backend_fixes/ac6_fps_physics_fix.cpp
     src/ac6_backend_fixes/ac6_fullres_effects.cpp
+    src/ac6_backend_fixes/ac6_gpu_wait_backoff.cpp
     src/ac6_backend_fixes/ac6_kbm_input.cpp
     src/ac6_backend_fixes/ac6_storage_submit_order_fix.cpp
     src/ac6_backend_fixes/ac6_widescreen.cpp
