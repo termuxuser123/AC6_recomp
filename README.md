@@ -254,15 +254,6 @@ If it exits immediately with code 1, it did not find `assets/default.xex` (or a 
 
 Press `F3` to see host (displayed) and guest (game) FPS. To make settings permanent, set them in `ac6recomp.toml` next to the executable (for example `ac6_unlock_fps = false`) instead of passing flags.
 
-### Fixes in this branch
-
-Problems hit while getting the game running on Linux, and what fixed them:
-
-- **Black screen running the Windows build under Wine.** Wine's built-in vkd3d rejected two things the shader translator generated: the `umad` instruction (now emitted as the equivalent `imad`), and the D3D12 "all resources bound" shader flag (now dropped, as it is only an optimization hint). Every vertex shader and several internal shaders failed to build, so nothing drew.
-- **Link error building the recompiler** (`undefined reference to XmaContext::kBitsPerPacketHeader`). Some audio constants had no definition and only linked when the optimizer removed their uses. They are now `constexpr`.
-- **Controller worked in menus but froze in the hangar and in missions.** Controller events are pumped through the UI thread at GTK's lowest priority, and once 3D rendering started the UI thread was busy painting every frame, so they never ran. They now run at normal priority.
-- **"Bus error" at startup.** The 4.5 GB guest memory mapping in `/dev/shm` was only removed on a clean exit, so every crash left one behind until `/dev/shm` filled up. It is now removed as soon as it is created, and the kernel frees it however the game exits. If you ran an older build, clear leftovers once with `rm -f /dev/shm/xenia_memory_*`.
-- **A CPU core pinned at 100% while waiting for the GPU.** The game busy-waits on the GPU every frame; on a laptop that spinning core takes power from the iGPU. It now sleeps 100 µs between checks (`ac6_gpu_wait_sleep_us`), which cut the frame-time spread roughly in half on a Radeon 660M.
 
 ---
 
