@@ -25,7 +25,14 @@ void GTKWindowedAppContext::NotifyUILoopOfPendingFunctions() {
   std::lock_guard<std::mutex> pending_functions_idle_pending_lock(
       pending_functions_idle_pending_mutex_);
   if (!pending_functions_idle_pending_) {
-    pending_functions_idle_pending_ = gdk_threads_add_idle(PendingFunctionsSourceFunc, this);
+    // G_PRIORITY_DEFAULT, not the default-idle priority: functions queued from
+    // other threads must not starve behind GTK's redraws. With the presenter
+    // painting from the UI thread every frame (UI drawers present, vsync'd
+    // present), a default-idle source never ran once 3D rendering started - and
+    // the SDL input driver pumps its events through here, so the controller
+    // froze in gameplay while still working in the lighter front-end menus.
+    pending_functions_idle_pending_ =
+        gdk_threads_add_idle_full(G_PRIORITY_DEFAULT, PendingFunctionsSourceFunc, this, nullptr);
   }
 }
 
