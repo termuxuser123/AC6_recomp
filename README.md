@@ -254,7 +254,6 @@ If it exits immediately with code 1, it did not find `assets/default.xex` (or a 
 
 Press `F3` to see host (displayed) and guest (game) FPS. To make settings permanent, set them in `ac6recomp.toml` next to the executable (for example `ac6_unlock_fps = false`) instead of passing flags.
 
-
 ---
 
 ## Repository policy
