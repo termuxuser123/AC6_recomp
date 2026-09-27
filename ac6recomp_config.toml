@@ -12,22 +12,6 @@ setjmp_address = 0x823CA9B0
 
 indirect_calls = [ 0x8237C368, 0x8237BA48 ]
 
-# Keep these guest registers as C++ locals inside each recompiled function
-# instead of loads/stores through the shared PPCContext, so the host compiler
-# can register-allocate them. Nothing outside the recompiled code reads these
-# from ctx (midasm hooks receive them through the same accessors).
-# Deliberately NOT enabled:
-#   skip_lr               - AC6 hooks read ctx.lr to identify their callers
-#                           (effect-mode fix, full-res effects, d3d hooks, kbm).
-#   non_volatile_as_local - longjmp restores registers through ctx, which would
-#                           miss locals; the title uses setjmp/longjmp.
-#   skip_msr              - left off to stay conservative.
-ctr_as_local = true
-xer_as_local = true
-reserved_as_local = true
-cr_as_local = true
-non_argument_as_local = true
-
 [rexcrt]
 RtlAllocateHeap = 0x821F9E10
 RtlFreeHeap = 0x821FA6F8
