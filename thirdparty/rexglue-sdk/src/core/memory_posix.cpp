@@ -547,6 +547,14 @@ FileMappingHandle CreateFileMappingHandle(const std::filesystem::path& path, siz
     shm_unlink(full_path.c_str());
     return kFileMappingHandleInvalid;
   }
+  // Drop the name right away: nothing reopens the mapping by name, and the
+  // descriptor (plus every mapping of it) keeps the memory alive. Unlinking
+  // only in CloseFileMappingHandle leaked the whole touched guest memory into
+  // /dev/shm whenever the process crashed or was killed, and once enough of
+  // those piled up the tmpfs filled and the next run died with SIGBUS on its
+  // first touch of guest memory. The unlink in CloseFileMappingHandle is now a
+  // harmless no-op.
+  shm_unlink(full_path.c_str());
   return static_cast<FileMappingHandle>(ret);
 #endif
 }
