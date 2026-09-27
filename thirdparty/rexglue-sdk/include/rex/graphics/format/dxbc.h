@@ -2048,7 +2048,14 @@ class Assembler {
     stat_.temp_array_count += count;
   }
   // flags are GlobalFlags.
+  // kGlobalFlagAllResourcesBound is dropped: it is only an optimization hint
+  // (every declared resource is bound), with no effect on results, and Wine's
+  // vkd3d-shader before its BIND_FOR_DURATION support rejects the whole shader
+  // with "E2008: Unhandled global flags 0x100" - which failed the generated
+  // geometry shaders and the render target transfer/dump shaders, leaving a
+  // black screen under Wine.
   void OpDclGlobalFlags(uint32_t flags) {
+    flags &= ~uint32_t(kGlobalFlagAllResourcesBound);
     code_.push_back(OpcodeToken(Opcode::kDclGlobalFlags, 0) | flags);
   }
   void OpLOD(const Dest& dest, const Src& address, uint32_t address_components, const Src& resource,
