@@ -252,6 +252,8 @@ If it exits immediately with code 1, it did not find `assets/default.xex` (or a 
 - `--no-vsync` avoids frames just over the refresh interval being held an extra refresh.
 - On laptops, plug in and use the performance power profile (`powerprofilesctl set performance`).
 
+**Packaging an AppImage** (single-file build to share): after building, run `tools/make_appimage.sh`. It writes `dist/ac6recomp-x86_64.AppImage`, bundling GTK and the other libraries. Users put `assets/` (or their `.iso`) next to the `.AppImage` and run it; config and logs are written there too. glibc and GPU drivers still come from the user's system, so build it on the oldest distro you want to support.
+
 Press `F3` to see host (displayed) and guest (game) FPS. To make settings permanent, set them in `ac6recomp.toml` next to the executable (for example `ac6_unlock_fps = false`) instead of passing flags.
 
 ---

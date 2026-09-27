@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 
 #if REX_PLATFORM_WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -341,6 +342,21 @@ bool ReXApp::ResolveGameSource(const std::filesystem::path& exe_dir,
 
 bool ReXApp::OnInitialize() {
   auto exe_dir = rex::filesystem::GetExecutableFolder();
+#if !defined(_WIN32)
+  // Packaged as an AppImage, the executable runs from a read-only temporary
+  // mount, so the config, logs and the game files (assets/ or .iso) cannot
+  // live next to it. The AppImage runtime exports APPIMAGE as the path of the
+  // .AppImage file itself: use the folder containing that instead, so an
+  // AppImage behaves like the plain build. Bundled resources (e.g. the
+  // gamecontrollerdb.txt the input driver loads) still resolve through
+  // GetExecutableFolder, inside the image.
+  if (const char* appimage = std::getenv("APPIMAGE"); appimage && *appimage) {
+    const auto appimage_dir = std::filesystem::path(appimage).parent_path();
+    if (!appimage_dir.empty()) {
+      exe_dir = appimage_dir;
+    }
+  }
+#endif
 
   auto config_path = exe_dir / (std::string(GetName()) + ".toml");
 

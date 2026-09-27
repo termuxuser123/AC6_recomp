@@ -49,3 +49,6 @@ extract-xiso.exe
 # Python bytecode cache (tools/*.py)
 __pycache__/
 *.pyc
+
+# Release packages (tools/make_appimage.sh)
+dist/
