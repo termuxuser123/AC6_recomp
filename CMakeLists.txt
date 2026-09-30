@@ -9,6 +9,18 @@ project(ac6recomp LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# The SDK uses std::expected, which clang only enables with GNU libstdc++ from
+# clang 19 on. With an older clang the build otherwise fails deep inside the
+# SDK with a wall of "no template named 'expected' in namespace 'std'" errors.
+if(NOT WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND
+   CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
+    message(FATAL_ERROR
+        "clang ${CMAKE_CXX_COMPILER_VERSION} is too old: building on Linux needs clang 19 or newer.\n"
+        "Install it (Debian/Ubuntu: sudo apt install clang-19, or run the llvm.sh script from "
+        "https://apt.llvm.org), delete out/build/<preset> and thirdparty/rexglue-sdk/out, then configure with:\n"
+        "  cmake --preset linux-amd64-relwithdebinfo -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19")
+endif()
+
 include(CheckIPOSupported)
 check_ipo_supported(RESULT AC6RECOMP_IPO_SUPPORTED OUTPUT AC6RECOMP_IPO_ERROR)
 
